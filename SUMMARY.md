@@ -27,17 +27,21 @@ exam_earth_mars_earth_jupiter
 
 ---
 
-## Key results (default script)
+## Key results (patched trajectory)
 
 | Item | Value |
 |------|-------|
 | LEO escape (3 burns, 300 km) | 4.02 km/s |
 | C3 at launch | 18.6 km²/s² |
+| Mars SOI patch (after GA) | ~7.54 km/s |
+| Earth SOI patch (after GA) | ~3.31 km/s |
 | Mars GA (heliocentric, no fuel) | 3.31 km/s |
 | Earth GA (heliocentric, no fuel) | 7.32 km/s |
 | Jupiter capture | 11.69 km/s |
-| **Total propulsive** | **~15.8 km/s** |
+| **Total propulsive (patched)** | **~26.6 km/s** |
 | E–J leg crosses asteroid belt (2.1–3.3 AU) | Yes |
+
+Passive flybys preserve \(|v_\infty|\); SOI patch burns at Mars and Earth match each Lambert leg.
 
 ---
 
@@ -59,12 +63,14 @@ exam_earth_mars_earth_jupiter
 
 | Count as propulsive | Do **not** count |
 |---------------------|------------------|
-| LEO escape | Gravity assists |
-| TCM reserve | Heliocentric kinematic burns at SOI |
+| LEO escape | Gravity-assist rotation alone |
+| **Mars / Earth SOI patch** (bridge Lambert legs) | GA `dV_sun` (kinematic, no fuel) |
+| TCM reserve | |
 | Planet capture | |
 | Planet → moon Hohmann (if added) | |
 
-GA `dV_sun` = heliocentric speed gain/loss, not fuel.
+**Nominal patched total ~26.6 km/s** (includes SOI patches).  
+**Launch + capture only ~15.8 km/s** if you ignore flyby \(v_\infty\) mismatches (not flyby-compatible).
 
 ---
 

@@ -25,10 +25,12 @@ vinf_out = rodrigues(vinf_in, k, sgn*delta);
 Vout = Vp + vinf_out;
 
 fb.v_inf = vinf;
+fb.v_inf_out = norm(vinf_out);
 fb.delta_deg = rad2deg(delta);
 fb.e = e;
 fb.V_out = Vout;
 fb.dV_sun = norm(Vout - Vin);
+fb.v_inf_out_vec = vinf_out;
 
 end
 

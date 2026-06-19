@@ -783,28 +783,35 @@ For our E–J leg: **yes**.
 | Manoeuvre | Propulsive? | Reason |
 |-----------|-------------|--------|
 | LEO escape burns | Yes | Chemical thrusters in Earth SOI |
-| Mars / Earth flyby | **No** | \(\|v_\infty\|\) conserved in planet frame |
+| Mars / Earth SOI patch | **Yes** | Bridge flyby exit → next Lambert `V_dep` |
+| Mars / Earth GA rotation | **No** | \(\|v_\infty\|\) conserved in planet frame |
 | TCM reserve | Yes | Small mid-course corrections (§8.7 sensitivity) |
 | Jupiter capture | Yes | Braking at Jupiter |
 | Jupiter → moon Hohmann | Yes (if added) | Planetocentric transfer |
 
 Heliocentric “\(\Delta v\)” at SOI boundaries in a Hohmann analysis (Prob. 8.1) is a **kinematic** difference relative to planet’s circular speed — it is **already accounted for** in \(v_\infty\) when you compute launch and capture burns. Do not double-count.
 
-### 15.2 Default E–M–E–J totals
+### 15.2 Default E–M–E–J totals (patched trajectory)
 
 | Item | km/s |
 |------|------|
 | LEO escape (3 burns) | 4.02 |
+| Mars SOI patch | ~7.54 |
+| Earth SOI patch | ~3.31 |
 | TCM | 0.05 |
 | Jupiter capture | 11.69 |
-| **Total propulsive** | **~15.76** |
+| **Total propulsive** | **~26.6** |
 
-Report separately:
+The SOI patches are required because passive flybys preserve \(|v_\infty|\) while successive Lambert legs demand different \(v_\infty\) at the same encounter epoch.
+
+Report separately (not propulsive):
 
 | GA | Heliocentric \(\Delta V\) |
 |----|---------------------------|
 | Mars | 3.31 |
 | Earth | 7.32 |
+
+**Launch + capture only (~15.8 km/s)** omits SOI patches and is not flyby-compatible.
 
 ### 15.3 Sensitivity — §8.7
 
@@ -818,7 +825,7 @@ Copy these into your “Limitations” section:
 
 1. **Patched conics** — no simultaneous Sun–Earth–Mars gravity (§8.5).
 2. **Instant SOI transitions** — velocity transform is discontinuous at boundary.
-3. **No flyby–leg chaining** — `V_out` from Mars/Earth GA is not fed into the next `interplanetary_lambert` solve; exam dates fix endpoints anyway.
+3. **SOI patch burns** — after each passive GA, `soi_patch_dv` matches the next Lambert `V_dep`. Without patches, \(|v_\infty|\) gaps at Mars (~7.5 km/s) and Earth (~3.3 km/s) make the trajectory flyby-incompatible.
 4. **Coplanar ecliptic** — inclinations from Table 8.1 neglected in \(\Delta v\); `heliocentric_phase_angle` uses ecliptic projection only.
 5. **Impulsive burns** — finite burn time and gravity loss near Earth not included.
 6. **Three-burn apogees** — Ra₁, Ra₂ are design choices, not optimised.

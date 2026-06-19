@@ -55,6 +55,8 @@ matlab/
 │   ├── multiburn_leo_escape.m              % three perigee burns + escape
 │   ├── capture_dv.m                        % Eq. 8.60 arrival capture
 │   ├── flyby_patch.m                       % Sec. 8.9 vector flyby
+│   ├── soi_patch_dv.m                      % SOI burn to next Lambert leg
+│   ├── propagate_twobody.m                 % Keplerian coast verification
 │   ├── flyby_delta.m                       % Eq. 8.54 turn angle only
 │   ├── asteroid_belt_crossing.m            % exam Task 7
 │   ├── synodic_period.m                    % Eq. 8.10
@@ -133,7 +135,7 @@ Dec 2028   EARTH FLYBY (trailing — boost toward Jupiter)
 Sep 2031   JUPITER — capture burn
 ```
 
-Gravity assists are **not** separate Lambert legs in the main script. Exam dates define the interplanetary arcs. At Mars and Earth we compute what the flyby does to heliocentric velocity (§8.9). A production study would feed `V_out` from one flyby into the next leg; the exam accepts Lambert leg → flyby analysis → next Lambert leg with dates fixed.
+Gravity assists rotate \(v_\infty\) without fuel. **SOI patch burns** (`soi_patch_dv`) after each GA match the next Lambert departure — required because passive flybys cannot change \(|v_\infty|\) enough between legs.
 
 ---
 
@@ -382,8 +384,8 @@ Every `.m` file, what it does, inputs/outputs, and when to use it.
 #### `exam_earth_mars_earth_jupiter.m`
 - **Purpose:** Full AGH exam solution — E–M–E–J with fixed dates Dec 2026 → Sep 2031.
 - **Usage:** `exam_earth_mars_earth_jupiter`
-- **Does:** Computes 3 Lambert legs, 2 flybys, 3-burn LEO escape, Jupiter capture, asteroid belt check, Δv table.
-- **Key outputs (printed):** TOFs, \(\phi\), \(v_\infty\), C3, flyby \(\delta\)/`dV_sun`, capture Δv, total propulsive ~15.76 km/s.
+- **Does:** Lambert legs on fixed dates, passive flybys, **SOI patch burns** to chain legs, LEO escape, Jupiter capture, coast verification, Δv table.
+- **Key outputs (printed):** TOFs, \(\phi\), \(v_\infty\), C3, flyby \(\delta\)/`dV_sun`, SOI patch Δv, capture Δv, total propulsive **~26.6 km/s** (patched).
 - **Edit here to:** change dates, flyby radii, capture altitude, add moon leg (§4.2).
 
 #### `exam_mission_saturn_titan.m`
@@ -522,6 +524,16 @@ Every `.m` file, what it does, inputs/outputs, and when to use it.
 - **`e_cap`:** eccentricity of capture orbit (0 = circular).
 - **Formula:** \(v_\text{hyp} = \sqrt{v_\infty^2 + 2\mu/r_p}\); \(v_\text{cap} = \sqrt{\mu/r_p(1+e_\text{cap})}\); \(\Delta v = v_\text{hyp} - v_\text{cap}\).
 
+#### `propagate_twobody.m`
+- **Purpose:** Keplerian coast — propagate \(\mathbf{R}, \mathbf{V}\) forward by \(\Delta t\) about a central body.
+- **Signature:** `[R, V] = propagate_twobody(R0, V0, dt, mu)`
+- **When:** Verify Lambert leg closure after SOI patch; chained coast analysis.
+
+#### `soi_patch_dv.m`
+- **Purpose:** Impulsive burn at planet SOI to match next Lambert departure velocity after a passive flyby.
+- **Signature:** `patch = soi_patch_dv(V_before, V_after, V_planet)`
+- **Returns:** `patch.dv`, `patch.v_inf_gap` (planet-frame \(|v_\infty|\) mismatch).
+
 #### `flyby_patch.m`
 - **Purpose:** Section 8.9 — full vector gravity assist in patched conics.
 - **Signature:** `fb = flyby_patch(Vp, Vin, rp, mu, leading)`
@@ -537,7 +549,8 @@ Every `.m` file, what it does, inputs/outputs, and when to use it.
 | `delta_deg` | Turn angle |
 | `e` | Flyby hyperbola eccentricity |
 | `V_out` | Heliocentric velocity after flyby |
-| `dV_sun` | \(\|V_\text{out} - V_\text{in}\|\) — heliocentric speed change |
+| `v_inf_out` | Outgoing \(\|v_\infty\|\) in planet frame (equals `v_inf` for passive GA) |
+| `dV_sun` | \(\|V_\text{out} - V_\text{in}\|\) — heliocentric speed change (not propulsive) |
 
 #### `flyby_delta.m`
 - **Purpose:** Eq. (8.54) only — turn angle and \(e\), no vectors.
@@ -635,6 +648,8 @@ exam_earth_mars_earth_jupiter
 ├─ heliocentric_phase_angle                       │
 ├─ multiburn_leo_escape                           │
 ├─ flyby_patch (×2)                               │
+├─ soi_patch_dv (×2)                              │
+├─ propagate_twobody (coast verify)               │
 ├─ capture_dv                                     │
 └─ asteroid_belt_crossing                         │
                                                   │
@@ -677,7 +692,7 @@ Lambert V_arr (heliocentric)  +  planet V  →  flyby_patch
 
 ## 8. Simplifications (say in the exam report)
 
-1. **No GA–leg iteration** — flyby `V_out` is not fed into the next Lambert solve; dates are fixed.
+1. **SOI patch burns** — after each passive GA, an impulsive burn matches the next Lambert `V_dep` (`soi_patch_dv`). Without these, \(|v_\infty|\) gaps total ~10.9 km/s.
 2. **Coplanar ecliptic** — all vectors effectively in the ecliptic plane; Table 8.1 inclinations neglected for Δv.
 3. **Instant SOI switch** — velocity transform at boundary; real n-body effects near SOI edges are weak (§8.5).
 4. **Three-burn LEO** — apogee heights `Ra1`, `Ra2` are design choices, not optimized.
@@ -691,17 +706,18 @@ Lambert V_arr (heliocentric)  +  planet V  →  flyby_patch
 | Item | Propulsive? | Notes |
 |------|-------------|-------|
 | LEO escape (1 or 3 burns) | **Yes** | Chemical |
-| Mars / Earth / Venus GA | **No** | `\|v∞\|` fixed in planet frame |
+| Mars / Earth SOI patch | **Yes** | Bridge flyby exit → next Lambert `V_dep` |
+| Mars / Earth GA rotation | **No** | Passive; `\|v∞\|` unchanged in planet frame |
 | TCM reserve | **Yes** | §8.7 sensitivity |
 | Planet capture | **Yes** | Hyperbola → orbit |
 | Planet → moon Hohmann | **Yes** | Two burns about planet |
 | Plane change | **Yes** | If included |
-| Heliocentric SOI burns (kinematic) | **No** | Already encoded in \(v_\infty\) for launch/capture |
 
-GA `dV_sun` values are **heliocentric speed change**, not fuel.
+GA `dV_sun` values are **heliocentric speed change** from rotation, not fuel.
 
-**Typical E–M–E–J propulsive total:** ~15.8 km/s (no moon).  
-**With Europa:** ~27.9 km/s (§4.2).
+**Patched E–M–E–J total:** ~26.6 km/s (includes SOI patches).  
+**Launch + capture only:** ~15.8 km/s (not flyby-compatible).  
+**With Europa:** add ~12 km/s Hohmann after capture.
 
 ---
 
